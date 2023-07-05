@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Video Chat Room</title>
+  <style>
+    #localVideo {
+      width: 300px;
+      height: 200px;
+      margin-bottom: 10px;
+    }
+
+    #remoteVideo {
+      width: 300px;
+      height: 200px;
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+  <video id="localVideo" autoplay muted></video>
+  <video id="remoteVideo" autoplay></video>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+
+    const roomName = window.location.pathname.substring(1);
+    socket.emit('join', roomName);
+
+    const localVideo = document.getElementById('localVideo');
+    const remoteVideo = document.getElementById('remoteVideo');
+
+    let peerConnection;
+
+    navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+      .then((stream) => {
+        localVideo.srcObject = stream;
+        stream.getTracks().forEach((track) => {
+          if (peerConnection) {
+            peerConnection.addTrack(track, stream);
+          }
+        });
+        createPeerConnection();
+      })
+      .catch((error) => {
+        console.error('Error accessing media devices:', error);
+      });
+
+    function createPeerConnection() {
+      const configuration = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
+      peerConnection = new RTCPeerConnection(configuration);
+
+      peerConnection.ontrack = (event) => {
+        remoteVideo.srcObject = event.streams[0];
+      };
+
+      peerConnection.onicecandidate = (event) => {
+        if (event.candidate) {
+          socket.emit('ice-candidate', event.candidate, roomName);
+        }
+      };
+
+      socket.on('other-user', () => {
+        peerConnection.createOffer()
+          .then((offer) => {
+            peerConnection.setLocalDescription(offer);
+            socket.emit('offer', offer, roomName);
+          })
+          .catch((error) => {
+            console.error('Error creating offer:', error);
+          });
+      });
+
+      socket.on('answer', (answer) => {
+        peerConnection.setRemoteDescription(answer);
+      });
+
+      socket.on('ice-candidate', (candidate) => {
+        peerConnection.addIceCandidate(candidate);
+      });
+    }
+  </script>
+</body>
+</html>
