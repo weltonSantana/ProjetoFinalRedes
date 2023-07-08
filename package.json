@@ -1,16 +1,19 @@
 {
-  "name": "videoconferencia",
+  "name": "videocall",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
-  "author": "",
+  "author": "Abhishek kalra",
   "license": "ISC",
   "dependencies": {
+    "ejs": "^3.1.9",
     "express": "^4.18.2",
-    "ws": "^8.13.0"
+    "nodemon": "^2.0.22",
+    "peer": "^0.6.1",
+    "socket.io": "^3.1.2",
+    "uuid": "^8.3.2"
   }
 }
